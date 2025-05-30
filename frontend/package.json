@@ -1,13 +1,14 @@
 {
-	"name": "frontend",
+	"name": "shonifity-frontend",
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "vite --port 5173 --host",
 		"build": "vite build",
 		"lint": "eslint .",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"start": "vite --port 5173 --host --open"
 	},
 	"dependencies": {
 		"react": "^18.3.1",
