@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { MoveRight, Shield, CreditCard, Truck, ArrowRight } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import axios from "../lib/axios";
+import Price from "./Price";
 
 const stripePromise = loadStripe(
 	"pk_test_51R7CofH6tbonX8fNnxT2KnOPKGirBt9N6v4Rc9jt5eGS2dEhTG4XD5yRU1jS9KdDhjq6fkudh3dwnDuOxElM0UBb00LjIAr2gU"
@@ -55,7 +56,7 @@ const OrderSummary = () => {
 				<div className='space-y-3'>
 					<div className='flex items-center justify-between'>
 						<span className='text-neutral-600'>Subtotal ({cart.length} items)</span>
-						<span className='font-medium text-neutral-700'>${formattedSubtotal}</span>
+						<Price price={formattedSubtotal} weight="medium" className="text-neutral-700" />
 					</div>
 
 					<div className='flex items-center justify-between'>
@@ -66,7 +67,7 @@ const OrderSummary = () => {
 					{savings > 0 && (
 						<div className='flex items-center justify-between text-success'>
 							<span>Savings</span>
-							<span className='font-medium'>-${formattedSavings}</span>
+							<span className='font-medium'>-<Price price={formattedSavings} /></span>
 						</div>
 					)}
 
@@ -81,7 +82,7 @@ const OrderSummary = () => {
 				<div className='border-t border-neutral-200 pt-4'>
 					<div className='flex items-center justify-between'>
 						<span className='text-lg font-bold text-neutral-700'>Total</span>
-						<span className='text-2xl font-bold text-gradient-primary'>${formattedTotal}</span>
+						<Price price={formattedTotal} size="2xl" weight="bold" className="text-gradient-primary" />
 					</div>
 				</div>
 			</div>

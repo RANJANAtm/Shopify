@@ -16,6 +16,7 @@ import CartPage from "./pages/CartPage";
 import { useCartStore } from "./stores/useCartStore";
 import PurchaseSuccessPage from "./pages/PurchaseSuccessPage";
 import PurchaseCancelPage from "./pages/PurchaseCancelPage";
+import { CurrencyProvider } from "./context/CurrencyContext";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -37,7 +38,8 @@ function App() {
 	if (checkingAuth) return <LoadingSpinner />;
 
 	return (
-		<div className='min-h-screen bg-background-light text-text-primary relative overflow-hidden'>
+		<CurrencyProvider>
+			<div className='min-h-screen bg-background-light text-text-primary relative overflow-hidden'>
 			{/* Modern Elegant Background with Mesh Gradient */}
 			<div className='fixed inset-0 z-0'>
 				<div className='absolute inset-0 bg-mesh-elegant opacity-40' />
@@ -101,8 +103,9 @@ function App() {
 						},
 					},
 				}}
-			/>
-		</div>
+				/>
+				</div>
+				 </CurrencyProvider>
 	);
 }
 

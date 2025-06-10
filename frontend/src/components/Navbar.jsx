@@ -2,6 +2,7 @@ import { ShoppingCart, UserPlus, LogIn, LogOut, Lock, Sparkles } from "lucide-re
 import { Link } from "react-router-dom";
 import { useUserStore } from "../stores/useUserStore";
 import { useCartStore } from "../stores/useCartStore";
+import CurrencyToggle from "./CurrencyToggle";
 
 const Navbar = () => {
 	const { user, logout } = useUserStore();
@@ -20,6 +21,9 @@ const Navbar = () => {
 					</Link>
 
 					<nav className='flex flex-wrap items-center gap-4'>
+						{/* Currency Toggle */}
+						<CurrencyToggle />
+						
 						<Link
 							to={"/"}
 							className='text-text-secondary hover:text-primary-500 transition-all duration-300 ease-in-out 

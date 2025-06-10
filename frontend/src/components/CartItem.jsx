@@ -2,6 +2,7 @@ import { Minus, Plus, Trash, Heart } from "lucide-react";
 import { useCartStore } from "../stores/useCartStore";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import Price from "./Price";
 
 const CartItem = ({ item }) => {
 	const { removeFromCart, updateQuantity } = useCartStore();
@@ -71,12 +72,10 @@ const CartItem = ({ item }) => {
 								</p>
 							)}
 							<div className='flex items-center gap-4 mt-3'>
-								<span className='text-2xl font-bold text-gradient-primary'>
-									${totalPrice}
-								</span>
-								<span className='text-sm text-neutral-400'>
-									${item.price} each
-								</span>
+							<Price price={totalPrice} size="2xl" weight="bold" className="text-gradient-primary" />
+							<span className='text-sm text-neutral-400'>
+							 <Price price={item.price} /> each
+							</span>
 							</div>
 						</div>
 					</div>
@@ -147,7 +146,7 @@ const CartItem = ({ item }) => {
 			{/* Mobile Price Display */}
 			<div className='md:hidden mt-4 pt-4 border-t border-neutral-200 flex justify-between items-center'>
 				<span className='text-neutral-600'>Total:</span>
-				<span className='text-xl font-bold text-gradient-primary'>${totalPrice}</span>
+				<Price price={totalPrice} size="xl" weight="bold" className="text-gradient-primary" />
 			</div>
 		</div>
 	);

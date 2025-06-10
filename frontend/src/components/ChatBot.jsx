@@ -72,9 +72,11 @@ const ChatBot = () => {
     
     try {
       // Try to send message to backend first
-      const response = await axios.post("/api/chatbot/message", {
+      console.log('🚀 Sending message to backend:', messageText);
+      const response = await axios.post("/chatbot/message", {
         message: messageText
       });
+      console.log('✅ Backend response:', response.data);
       
       // Add bot response from backend
       const botMessage = {
@@ -82,6 +84,8 @@ const ChatBot = () => {
         text: response.data.response,
         sender: "bot",
         cached: response.data.cached,
+        dataType: response.data.dataType, // Add dataType for special formatting
+        queryUsed: response.data.queryUsed, // Add query info
         timestamp: new Date(),
         suggestions: response.data.suggestions || []
       };
@@ -129,7 +133,7 @@ const ChatBot = () => {
         // Try to get suggestions from backend
         const handler = setTimeout(async () => {
           try {
-            const response = await axios.get(`/api/chatbot/suggestions?query=${encodeURIComponent(text)}`);
+            const response = await axios.get(`/chatbot/suggestions?query=${encodeURIComponent(text)}`);
             if (response.data.suggestions && response.data.suggestions.length > 0) {
               setSuggestions(response.data.suggestions);
             } else {
@@ -165,8 +169,8 @@ const ChatBot = () => {
     inputRef.current?.focus();
   };
 
-  // Handle pre-defined suggestion click
-  const handlePreSuggestionClick = (suggestion) => {
+  // Handle pre-defined suggestion click - Updated to use backend API
+  const handlePreSuggestionClick = async (suggestion) => {
     const userMessage = {
       id: Date.now(),
       text: suggestion,
@@ -177,8 +181,35 @@ const ChatBot = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
-    // Use local response for quick suggestions
-    setTimeout(() => {
+    try {
+      // Try to send message to backend first (same as handleSendMessage)
+      console.log('🚀 Sending suggestion to backend:', suggestion);
+      const response = await axios.post("/chatbot/message", {
+        message: suggestion
+      });
+      console.log('✅ Backend response for suggestion:', response.data);
+      
+      // Add bot response from backend
+      const botMessage = {
+        id: Date.now() + 1,
+        text: response.data.response,
+        sender: "bot",
+        cached: response.data.cached,
+        dataType: response.data.dataType, // Add dataType for special formatting
+        queryUsed: response.data.queryUsed, // Add query info
+        timestamp: new Date(),
+        suggestions: response.data.suggestions || []
+      };
+      
+      setMessages(prev => [...prev, botMessage]);
+      
+      if (!isOpen) {
+        setUnreadCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Backend API error for suggestion, using local response:", error);
+      
+      // Fallback to local response
       const botResponse = getBotResponse(suggestion);
       const botMessage = {
         id: Date.now() + 1,
@@ -191,12 +222,13 @@ const ChatBot = () => {
       };
       
       setMessages(prev => [...prev, botMessage]);
-      setIsLoading(false);
       
       if (!isOpen) {
         setUnreadCount(prev => prev + 1);
       }
-    }, 800 + Math.random() * 1000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleChat = () => {
@@ -431,6 +463,8 @@ const ChatBot = () => {
                               className={`p-3 rounded-xl shadow-lg backdrop-blur-sm ${
                                 msg.isError
                                 ? "bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300"
+                                : msg.dataType === 'database_result'
+                                ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-900 border border-blue-200"
                                 : "bg-white border border-primary-200 text-text-primary"
                               }`}
                               whileHover={{ scale: 1.02 }}
@@ -442,7 +476,12 @@ const ChatBot = () => {
                                   </div>
                                 )}
                                 <div className="flex-1">
-                                  <p className="text-sm leading-relaxed">{msg.text}</p>
+                                  <p className="text-sm leading-relaxed whitespace-pre-line">{msg.text}</p>
+                                  {msg.dataType === 'database_result' && (
+                                    <div className="mt-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full inline-block">
+                                      📊 Live Database Data
+                                    </div>
+                                  )}
                                   <div className="flex items-center justify-between mt-2">
                                     <p className="text-xs text-text-secondary">
                                       {formatTime(msg.timestamp)}
@@ -567,28 +606,28 @@ const ChatBot = () => {
                       <span>Popular Products</span>
                     </motion.button>
                     <motion.button
-                      onClick={() => handlePreSuggestionClick("Track my order")}
-                      className="flex items-center space-x-2 px-3 py-2 text-xs bg-white border border-primary-200 
-                               hover:bg-gradient-to-r hover:from-primary-500 hover:to-accent-500 text-text-secondary 
+                      onClick={() => handlePreSuggestionClick("How many orders today?")}
+                      className="flex items-center space-x-2 px-3 py-2 text-xs bg-white border border-blue-200 
+                               hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500 text-text-secondary 
                                hover:text-white rounded-xl transition-all duration-200 whitespace-nowrap 
                                hover:border-transparent shadow-sm hover:shadow-glow focus:outline-none"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       <Package size={14} />
-                      <span>Track Order</span>
+                      <span>Orders Today</span>
                     </motion.button>
                     <motion.button
-                      onClick={() => handlePreSuggestionClick("Help with returns")}
-                      className="flex items-center space-x-2 px-3 py-2 text-xs bg-white border border-primary-200 
-                               hover:bg-gradient-to-r hover:from-primary-500 hover:to-accent-500 text-text-secondary 
+                      onClick={() => handlePreSuggestionClick("What's our total revenue?")}
+                      className="flex items-center space-x-2 px-3 py-2 text-xs bg-white border border-green-200 
+                               hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 text-text-secondary 
                                hover:text-white rounded-xl transition-all duration-200 whitespace-nowrap 
                                hover:border-transparent shadow-sm hover:shadow-glow focus:outline-none"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       <RotateCcw size={14} />
-                      <span>Returns</span>
+                      <span>Total Revenue</span>
                     </motion.button>
                   </div>
                 </div>

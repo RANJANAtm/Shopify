@@ -3,6 +3,7 @@ import { ShoppingCart, Heart, Star, Zap } from "lucide-react";
 import { useUserStore } from "../stores/useUserStore";
 import { useCartStore } from "../stores/useCartStore";
 import { useState } from "react";
+import Price from "./Price";
 
 const ProductCard = ({ product }) => {
 	const { user } = useUserStore();
@@ -73,7 +74,7 @@ const ProductCard = ({ product }) => {
 				{/* Price Badge */}
 				<div className='absolute top-4 left-4 glass-card px-3 py-1 opacity-0 group-hover:opacity-100 
 							  transform -translate-x-8 group-hover:translate-x-0 transition-all duration-300'>
-					<span className='text-2xl font-bold text-gradient-primary'>${product.price}</span>
+					<Price price={product.price} size="2xl" weight="bold" className="text-gradient-primary" />
 				</div>
 
 				{/* Trending Badge */}
@@ -108,12 +109,8 @@ const ProductCard = ({ product }) => {
 
 					<div className='flex items-center justify-between mb-4'>
 						<div className='flex items-center gap-3'>
-							<span className='text-3xl font-bold text-gradient-primary'>
-								${product.price}
-							</span>
-							<span className='text-lg text-text-secondary line-through'>
-								${(product.price * 1.3).toFixed(2)}
-							</span>
+							<Price price={product.price} size="3xl" weight="bold" className="text-gradient-primary" />
+							<Price price={(product.price * 1.3).toFixed(2)} size="lg" className="text-text-secondary line-through" />
 						</div>
 						<div className='glass-card px-2 py-1'>
 							<span className='text-xs font-medium text-success'>23% OFF</span>
