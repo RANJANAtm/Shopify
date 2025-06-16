@@ -330,6 +330,50 @@ const ChatBot = () => {
     ).slice(0, 3);
   };
 
+  // Format markdown text to JSX
+  const formatMessage = (text) => {
+    if (!text) return text;
+    
+    // Simple markdown parser for chatbot responses
+    let formatted = text;
+    
+    // Handle the specific patterns from the user's example
+    
+    // 1. Handle "📊 **Live Data Result:**" pattern
+    formatted = formatted.replace(/📊\s*\*\*Live Data Result:\*\*/g, 
+      '<div class="bg-blue-50 border-l-4 border-blue-400 p-2 mb-2 rounded flex items-center"><span class="text-blue-800 font-bold">📊 Live Data Result:</span></div>');
+    
+    // 2. Handle "**Total number of X**: **Y**" pattern
+    formatted = formatted.replace(/\*\*Total number of (.*?)\*\*:\s*\*\*(\d+)\*\*/g, 
+      '<div class="bg-green-50 border-l-4 border-green-400 p-2 my-1 rounded"><span class="text-green-800 font-semibold">Total number of $1: </span><span class="text-green-900 font-bold text-lg">$2</span></div>');
+    
+    // 3. Handle "*Query executed: Intent: X*" pattern
+    formatted = formatted.replace(/\*Query executed: Intent: (.*?)\*/g, 
+      '<div class="text-xs text-gray-500 mt-1 italic bg-gray-100 px-2 py-1 rounded">Query executed: Intent: $1</div>');
+    
+    // 4. Handle remaining **bold** text
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-gray-800">$1</span>');
+    
+    // 5. Handle remaining *italic* text
+    formatted = formatted.replace(/\*([^*]+?)\*/g, '<span class="italic text-gray-600">$1</span>');
+    
+    // 6. Add line breaks
+    formatted = formatted.replace(/\n/g, '<br />');
+    
+    return formatted;
+  };
+
+  // Render formatted message as HTML
+  const renderMessage = (text) => {
+    const formattedText = formatMessage(text);
+    return (
+      <div 
+        className="text-sm leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: formattedText }}
+      />
+    );
+  };
+
   // Format timestamp
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -428,7 +472,7 @@ const ChatBot = () => {
                             className="bg-gradient-to-r from-primary-500 to-primary-600 text-white p-3 rounded-xl shadow-lg backdrop-blur-sm"
                             whileHover={{ scale: 1.02 }}
                           >
-                            <p className="text-sm leading-relaxed">{msg.text}</p>
+                            {renderMessage(msg.text)}
                             <div className="flex items-center justify-between mt-2">
                               <p className="text-xs text-white/70">
                                 {formatTime(msg.timestamp)}
@@ -476,7 +520,7 @@ const ChatBot = () => {
                                   </div>
                                 )}
                                 <div className="flex-1">
-                                  <p className="text-sm leading-relaxed whitespace-pre-line">{msg.text}</p>
+                                  {renderMessage(msg.text)}
                                   {msg.dataType === 'database_result' && (
                                     <div className="mt-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full inline-block">
                                       📊 Live Database Data

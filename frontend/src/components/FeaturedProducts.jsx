@@ -3,6 +3,7 @@ import { ShoppingCart, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useCartStore } from "../stores/useCartStore";
 import { useUserStore } from "../stores/useUserStore";
 import toast from "react-hot-toast";
+import Price from "./Price";
 
 const FeaturedProducts = ({ featuredProducts }) => {
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,13 +67,6 @@ const FeaturedProducts = ({ featuredProducts }) => {
 	return (
 		<div className='py-12'>
 			<div className='container mx-auto px-4'>
-				<div className='text-center mb-12'>
-					<h2 className='text-4xl font-bold text-gradient-primary mb-4'>Featured Products</h2>
-					<p className='text-neutral-600 max-w-2xl mx-auto'>
-						Discover our handpicked selection of premium products that combine style, quality, and innovation
-					</p>
-				</div>
-				
 				<div className='relative'>
 					<div className='overflow-hidden'>
 						<div
@@ -97,11 +91,14 @@ const FeaturedProducts = ({ featuredProducts }) => {
 											
 											{/* Price Badge */}
 											<div className='absolute top-4 right-4 glass-card px-2 py-1 opacity-0 
-														  group-hover:opacity-100 transform translate-x-8 
-														  group-hover:translate-x-0 transition-all duration-300'>
-												<span className='text-sm font-bold text-gradient-primary'>
-													${product.price}
-												</span>
+											group-hover:opacity-100 transform translate-x-8 
+											group-hover:translate-x-0 transition-all duration-300'>
+											<Price 
+											price={product.price} 
+											 size="sm" 
+											  weight="bold" 
+													className="text-gradient-primary"
+												/>
 											</div>
 										</div>
 
@@ -128,12 +125,17 @@ const FeaturedProducts = ({ featuredProducts }) => {
 												</div>
 
 												<div className='flex items-center justify-between mb-4'>
-													<span className='text-2xl font-bold text-gradient-primary'>
-														${product.price}
-													</span>
-													<span className='text-sm text-neutral-400 line-through'>
-														${(product.price * 1.2).toFixed(2)}
-													</span>
+													<Price 
+														price={product.price} 
+														size="2xl" 
+														weight="bold" 
+														className="text-gradient-primary"
+													/>
+													<Price 
+														price={(product.price * 1.2).toFixed(2)} 
+														size="sm" 
+														className="text-neutral-400 line-through"
+													/>
 												</div>
 											</div>
 

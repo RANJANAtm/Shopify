@@ -5,13 +5,18 @@ import { MoveRight, Shield, CreditCard, Truck, ArrowRight } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import axios from "../lib/axios";
 import Price from "./Price";
+import { useCurrency } from "../context/CurrencyContext";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 const stripePromise = loadStripe(
-	"pk_test_51R7CofH6tbonX8fNnxT2KnOPKGirBt9N6v4Rc9jt5eGS2dEhTG4XD5yRU1jS9KdDhjq6fkudh3dwnDuOxElM0UBb00LjIAr2gU"
+	import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "pk_test_51R7CofH6tbonX8fNnxT2KnOPKGirBt9N6v4Rc9jt5eGS2dEhTG4XD5yRU1jS9KdDhjq6fkudh3dwnDuOxElM0UBb00LjIAr2gU"
 );
 
 const OrderSummary = () => {
 	const { total, subtotal, coupon, isCouponApplied, cart } = useCartStore();
+	const { currency, convertToUSD } = useCurrency();
+	const [isProcessing, setIsProcessing] = useState(false);
 
 	const savings = subtotal - total;
 	const formattedSubtotal = subtotal.toFixed(2);
@@ -19,19 +24,47 @@ const OrderSummary = () => {
 	const formattedSavings = savings.toFixed(2);
 
 	const handlePayment = async () => {
-		const stripe = await stripePromise;
-		const res = await axios.post("/payments/create-checkout-session", {
-			products: cart,
-			couponCode: coupon ? coupon.code : null,
-		});
+		if (isProcessing) return;
+		
+		setIsProcessing(true);
+		try {
+			const stripe = await stripePromise;
+			
+			// Convert cart items to USD for Stripe (Stripe processes in USD)
+			const cartInUSD = cart.map(item => ({
+				...item,
+				price: convertToUSD(item.price)
+			}));
 
-		const session = res.data;
-		const result = await stripe.redirectToCheckout({
-			sessionId: session.id,
-		});
+			console.log('Creating checkout session with currency:', currency);
+			
+			const res = await axios.post("/payments/create-checkout-session", {
+				products: cartInUSD,
+				couponCode: coupon ? coupon.code : null,
+				currency: currency
+			});
 
-		if (result.error) {
-			console.error("Error:", result.error);
+			if (!res.data.success) {
+				throw new Error(res.data.message || 'Failed to create checkout session');
+			}
+
+			const session = res.data;
+			console.log('Checkout session created:', session.id);
+			
+			const result = await stripe.redirectToCheckout({
+				sessionId: session.id,
+			});
+
+			if (result.error) {
+				console.error("Stripe redirect error:", result.error);
+				toast.error(result.error.message || 'Payment redirect failed');
+			}
+		} catch (error) {
+			console.error("Payment error:", error);
+			const errorMessage = error.response?.data?.message || error.message || 'Payment processing failed';
+			toast.error(errorMessage);
+		} finally {
+			setIsProcessing(false);
 		}
 	};
 
@@ -89,14 +122,26 @@ const OrderSummary = () => {
 
 			{/* Checkout Button */}
 			<motion.button
-				className='w-full btn-primary flex items-center justify-center gap-2 mb-4'
-				whileHover={{ scale: 1.02 }}
-				whileTap={{ scale: 0.98 }}
+				className={`w-full btn-primary flex items-center justify-center gap-2 mb-4 ${
+					isProcessing ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-glow-lg'
+				}`}
+				whileHover={!isProcessing ? { scale: 1.02 } : {}}
+				whileTap={!isProcessing ? { scale: 0.98 } : {}}
 				onClick={handlePayment}
+				disabled={isProcessing}
 			>
-				<CreditCard className='w-5 h-5' />
-				Proceed to Checkout
-				<ArrowRight className='w-5 h-5' />
+				{isProcessing ? (
+					<>
+						<div className='w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin' />
+						Processing...
+					</>
+				) : (
+					<>
+						<CreditCard className='w-5 h-5' />
+						Proceed to Checkout
+						<ArrowRight className='w-5 h-5' />
+					</>
+				)}
 			</motion.button>
 
 			{/* Continue Shopping */}

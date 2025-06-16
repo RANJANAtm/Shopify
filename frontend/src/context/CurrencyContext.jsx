@@ -10,14 +10,72 @@ const EXCHANGE_RATES = {
 
 export const CurrencyProvider = ({ children }) => {
   const [currency, setCurrency] = useState(() => {
-    // Get saved currency from localStorage or default to USD
-    return localStorage.getItem('selectedCurrency') || 'USD';
+    // Safe localStorage access with fallback
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        return localStorage.getItem('selectedCurrency') || 'USD';
+      } catch (error) {
+        console.warn('localStorage not available:', error);
+        return 'USD';
+      }
+    }
+    return 'USD';
   });
 
-  // Save currency selection to localStorage
+  const [exchangeRates, setExchangeRates] = useState(EXCHANGE_RATES);
+  const [isLoadingRates, setIsLoadingRates] = useState(false);
+
+  // Safe localStorage save
   useEffect(() => {
-    localStorage.setItem('selectedCurrency', currency);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem('selectedCurrency', currency);
+      } catch (error) {
+        console.warn('Could not save currency to localStorage:', error);
+      }
+    }
   }, [currency]);
+
+  // Fetch live exchange rates
+  useEffect(() => {
+    const fetchExchangeRates = async () => {
+      if (isLoadingRates) return; // Prevent multiple concurrent requests
+      
+      setIsLoadingRates(true);
+      try {
+        // Using a free API for exchange rates
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (!response.ok) throw new Error('Failed to fetch exchange rates');
+        
+        const data = await response.json();
+        if (data.rates?.INR) {
+          const newRates = {
+            USD_TO_INR: data.rates.INR,
+            INR_TO_USD: 1 / data.rates.INR
+          };
+          setExchangeRates(newRates);
+          // Only log once to avoid console spam in development
+          if (!window.__EXCHANGE_RATES_LOGGED) {
+            console.log('✅ Exchange rates updated successfully:', newRates);
+            window.__EXCHANGE_RATES_LOGGED = true;
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch live exchange rates, using defaults:', error);
+        // Keep using the default rates
+      } finally {
+        setIsLoadingRates(false);
+      }
+    };
+
+    // Fetch rates on component mount only
+    fetchExchangeRates();
+    
+    // Fetch rates every hour
+    const interval = setInterval(fetchExchangeRates, 3600000);
+    
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array to run only once on mount
 
   // Toggle between currencies
   const toggleCurrency = () => {
@@ -30,7 +88,7 @@ export const CurrencyProvider = ({ children }) => {
     if (isNaN(price)) return '0.00';
     
     if (currency === 'INR') {
-      return (price * EXCHANGE_RATES.USD_TO_INR).toFixed(2);
+      return (price * exchangeRates.USD_TO_INR).toFixed(2);
     }
     return price.toFixed(2);
   };
@@ -55,7 +113,7 @@ export const CurrencyProvider = ({ children }) => {
     if (isNaN(numPrice)) return 0;
     
     if (fromCurrency === 'INR') {
-      return (numPrice * EXCHANGE_RATES.INR_TO_USD).toFixed(2);
+      return (numPrice * exchangeRates.INR_TO_USD).toFixed(2);
     }
     return numPrice.toFixed(2);
   };
@@ -67,7 +125,8 @@ export const CurrencyProvider = ({ children }) => {
     convertPrice,
     formatPrice,
     convertToUSD,
-    exchangeRates: EXCHANGE_RATES
+    exchangeRates,
+    isLoadingRates
   };
 
   return (

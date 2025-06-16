@@ -10,19 +10,80 @@ const PurchaseSuccessPage = () => {
 	const [isProcessing, setIsProcessing] = useState(true);
 	const { clearCart } = useCartStore();
 	const [error, setError] = useState(null);
+	const [hasProcessed, setHasProcessed] = useState(false); // Add flag to prevent duplicate calls
 
 	useEffect(() => {
+		// Prevent multiple API calls (React StrictMode can cause double execution)
+		if (hasProcessed) {
+			console.log('⏭️ Skipping duplicate checkout processing');
+			return;
+		}
+
 		const handleCheckoutSuccess = async (sessionId) => {
+			setHasProcessed(true); // Mark as processed to prevent duplicates
 			try {
-				await axios.post("/payments/checkout-success", {
-					sessionId,
-				});
-				clearCart();
+				console.log('🔄 Processing checkout success for session:', sessionId);
+				
+				// Add timeout to prevent hanging
+				const timeoutPromise = new Promise((_, reject) => 
+					setTimeout(() => reject(new Error('Request timeout - please refresh the page')), 30000)
+				);
+				
+				const response = await Promise.race([
+					axios.post("/payments/checkout-success", { sessionId }),
+					timeoutPromise
+				]);
+				
+				if (response.data.success) {
+					console.log('✅ Order completed successfully:', response.data.orderId);
+					// Clear cart after successful order
+					try {
+						await clearCart();
+						console.log('📋 Cart cleared successfully');
+					} catch (cartError) {
+						console.warn('⚠️ Failed to clear cart:', cartError);
+						// Don't fail the success flow if cart clearing fails
+					}
+					setIsProcessing(false); // Success - stop processing
+				} else {
+					throw new Error(response.data.message || 'Order completion failed');
+				}
 			} catch (error) {
-				console.error("Checkout success error:", error);
-				setError("Failed to process order completion");
-			} finally {
-				setIsProcessing(false);
+				console.error("❌ Checkout success error:", error);
+				let errorMessage = "Failed to process order completion";
+				
+				// Handle specific error cases
+				if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+					errorMessage = "Network error. Please check your connection and try refreshing the page.";
+				} else if (error.response?.status === 401) {
+					errorMessage = "Session expired. Please log in again.";
+				} else if (error.response?.status === 404) {
+					errorMessage = "Payment session not found. Please contact support.";
+				} else if (error.response?.status === 500) {
+					// Check if this is a duplicate order issue
+					if (error.response?.data?.message?.includes('already exists') || 
+						error.response?.data?.message?.includes('duplicate') ||
+						error.response?.data?.isExisting) {
+						// Order was already processed successfully, show success instead of error
+						console.log('🔄 Order already processed, showing success page');
+						try {
+							await clearCart();
+							console.log('📋 Cart cleared for existing order');
+						} catch (cartError) {
+							console.warn('⚠️ Failed to clear cart:', cartError);
+						}
+						setIsProcessing(false);
+						return;
+					}
+					errorMessage = "Server error. Your payment was processed but there was an issue. Please contact support with your session ID.";
+				} else if (error.response?.data?.message) {
+					errorMessage = error.response.data.message;
+				} else if (error.message) {
+					errorMessage = error.message;
+				}
+				
+				setError(errorMessage);
+				setIsProcessing(false); // Error - stop processing
 			}
 		};
 
@@ -33,7 +94,7 @@ const PurchaseSuccessPage = () => {
 			setIsProcessing(false);
 			setError("No session ID found in the URL");
 		}
-	}, [clearCart]);
+	}, []); // Remove clearCart dependency to prevent re-runs
 
 	if (isProcessing) {
 		return (
